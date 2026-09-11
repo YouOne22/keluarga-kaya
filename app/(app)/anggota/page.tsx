@@ -1,0 +1,7 @@
+import { UserPlus } from "lucide-react";
+import { createClient } from "@/lib/supabase/server";
+import { AppHeader } from "@/components/app/navigation";
+import { Card } from "@/components/ui";
+import { initials } from "@/lib/financial";
+export const dynamic="force-dynamic";
+export default async function AnggotaPage(){const supabase=await createClient();const {data:m}=await supabase.from("family_members").select("user_id,role,joined_at").limit(50);const ids=(m||[]).map((x:any)=>x.user_id);const {data:profiles}=ids.length?await supabase.from("profiles").select("id,full_name,phone_number").in("id",ids):{data:[]};const byId=new Map((profiles||[]).map((x:any)=>[x.id,x]));return <><AppHeader title="Anggota" subtitle="Orang dalam keluarga"/><Card>{m?.length?m.map((member:any)=>{const p=byId.get(member.user_id);return <div className="member-row" key={member.user_id}><span className="avatar">{initials(p?.full_name||"Anggota")}</span><div><strong>{p?.full_name||"Anggota"}</strong><span>{p?.phone_number||"Belum ada nomor"}</span></div><span className="pill">{member.role==="owner"?"Pemilik":"Anggota"}</span></div>}):<div className="empty"><UserPlus size={28}/><strong>Belum ada anggota</strong>Tambahkan anggota setelah fitur undangan tersedia.</div>}</Card><Card className="side-panel" style={{marginTop:18}}><h3>Undang anggota keluarga</h3><p style={{color:"var(--muted)",fontSize:13}}>Bagikan nomor keluarga Anda agar anggota dapat terhubung dengan bot WhatsApp.</p></Card></>}
