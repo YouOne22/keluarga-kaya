@@ -64,7 +64,6 @@ export async function POST(request: NextRequest) {
       .single();
 
     if (!profile) {
-      await sendWhatsApp(sender, "Nomor Anda belum terdaftar di Keluarga Kaya. Silakan daftar melalui aplikasi.", { inboxid });
       return NextResponse.json({ status: "ignored", reason: "unknown number" });
     }
 
@@ -76,7 +75,6 @@ export async function POST(request: NextRequest) {
       .single();
 
     if (!familyMember) {
-      await sendWhatsApp(sender, "Anda belum memiliki keluarga. Silakan buat keluarga melalui aplikasi.", { inboxid });
       return NextResponse.json({ status: "ignored", reason: "no family" });
     }
 
