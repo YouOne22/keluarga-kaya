@@ -56,17 +56,36 @@ export async function POST(request: NextRequest) {
     const phone = normalizePhone(sender);
     const text = message.trim();
 
-    // 1. Find household member by phone number
-    const { data: member } = await admin
-      .from("household_members")
-      .select("id, household_id, user_id, full_name")
+    // 1. Find user by phone number in profiles table
+    const { data: profile } = await admin
+      .from("profiles")
+      .select("id, full_name, phone_number")
       .eq("phone_number", phone)
       .single();
 
-    if (!member) {
+    if (!profile) {
       await sendWhatsApp(sender, "Nomor Anda belum terdaftar di Keluarga Kaya. Silakan daftar melalui aplikasi.", { inboxid });
       return NextResponse.json({ status: "ignored", reason: "unknown number" });
     }
+
+    // 2. Find household via family_members
+    const { data: familyMember } = await admin
+      .from("family_members")
+      .select("family_id, user_id")
+      .eq("user_id", profile.id)
+      .single();
+
+    if (!familyMember) {
+      await sendWhatsApp(sender, "Anda belum memiliki keluarga. Silakan buat keluarga melalui aplikasi.", { inboxid });
+      return NextResponse.json({ status: "ignored", reason: "no family" });
+    }
+
+    const member = {
+      id: profile.id,
+      household_id: familyMember.family_id,
+      user_id: profile.id,
+      full_name: profile.full_name,
+    };
 
     // 2. Check if this is a confirmation reply (SIMPAN / BATAL)
     const upperText = text.toUpperCase().trim();
@@ -102,15 +121,14 @@ export async function POST(request: NextRequest) {
 
       // Create notification for partner
       const { data: allMembers } = await admin
-        .from("household_members")
+        .from("family_members")
         .select("user_id")
-        .eq("household_id", draft.householdId)
+        .eq("family_id", draft.householdId)
         .neq("user_id", draft.userId);
 
       if (allMembers) {
         for (const m of allMembers) {
           await admin.from("notifications").insert({
-            household_id: draft.householdId,
             family_id: draft.householdId,
             user_id: m.user_id,
             type: "transaction",
