@@ -85,16 +85,8 @@ export function parseWAMessage(raw: string): ParsedTransaction {
   const text = raw.trim();
   const type = inferType(text);
 
-  // Strip prefix
   const prefixes = [
-    "keluar",
-    "masuk",
-    "bayar",
-    "beli",
-    "spend",
-    "income",
-    "output",
-    "input",
+    "keluar", "masuk", "bayar", "beli", "spend", "income", "output", "input",
   ];
   let clean = text;
   for (const p of prefixes) {
@@ -104,19 +96,14 @@ export function parseWAMessage(raw: string): ParsedTransaction {
     }
   }
 
-  // Match: <number> <description>
-  // Number can be: 85000, 85.000, 85rb, 85k, Rp85.000
+  // Match: <number> <description>. Number can be: 85000, 85.000, 85rb, 85k, Rp85.000
   const match = clean.match(
-    /^(?:rp\.?\s*)?([\d.,]+)\s*(?:rb|k|ribu|juta|m)?\s*(.*)/i
+    /^(?:rp\.?\s*)?([\d.,]+)\s*(?:rb|k|ribu|juta|jt|m)?\s*(.*)/i
   );
 
   if (!match) {
     return {
-      type,
-      amount: 0,
-      description: text,
-      categoryHint: null,
-      valid: false,
+      type, amount: 0, description: text, categoryHint: null, valid: false,
       error: "Format tidak dikenali. Gunakan: [nominal] [catatan]",
     };
   }
@@ -125,25 +112,21 @@ export function parseWAMessage(raw: string): ParsedTransaction {
   let amount = parseInt(rawNum, 10);
 
   const suffix = clean.toLowerCase();
-  if (suffix.includes("rb") || suffix.includes("k") || suffix.includes("ribu")) {
-    // If original match was small like "85" + "rb" in original
-    const suffixMatch = clean.match(
-      /^[\s\S]*?([\d.,]+)\s*(rb|k|ribu)/i
-    );
+
+  // Use \d prefix + (?![a-z]) negative lookahead:
+  // - Must follow a digit (prevents matching inside words like "makan", "ojol")
+  // - Must NOT be followed by a letter (prevents matching "k" in "kopi", "m" in "makan")
+  // This works for both "85rb" (no space) and "85 rb" (with space).
+  if (/\d\s*rb(?![a-z])/i.test(suffix) || /\d\s*ribu(?![a-z])/i.test(suffix) || /\d\s*k(?![a-z])/i.test(suffix)) {
+    const suffixMatch = clean.match(/^[\s\S]*?([\d.,]+)\s*(rb|k|ribu)(?![a-z])/i);
     if (suffixMatch) {
       amount = parseInt(suffixMatch[1].replace(/[.,]/g, ""), 10);
-      if (suffixMatch[2].toLowerCase() === "rb" || suffixMatch[2].toLowerCase() === "k") {
-        amount *= 1000;
-      } else {
-        amount *= 1000;
-      }
+      amount *= 1000;
     }
   }
 
-  if (suffix.includes("juta") || suffix.includes("jt") || suffix.includes("m")) {
-    const suffixMatch = clean.match(
-      /^[\s\S]*?([\d.,]+)\s*(juta|jt|m)/i
-    );
+  if (/\d\s*jt(?![a-z])/i.test(suffix) || /\d\s*juta(?![a-z])/i.test(suffix) || /\d\s*m(?![a-z])/i.test(suffix)) {
+    const suffixMatch = clean.match(/^[\s\S]*?([\d.,]+)\s*(juta|jt|m)(?![a-z])/i);
     if (suffixMatch) {
       amount = parseInt(suffixMatch[1].replace(/[.,]/g, ""), 10);
       amount *= 1_000_000;
@@ -152,11 +135,7 @@ export function parseWAMessage(raw: string): ParsedTransaction {
 
   if (isNaN(amount) || amount <= 0) {
     return {
-      type,
-      amount: 0,
-      description: text,
-      categoryHint: null,
-      valid: false,
+      type, amount: 0, description: text, categoryHint: null, valid: false,
       error: "Nominal tidak valid.",
     };
   }
@@ -165,11 +144,9 @@ export function parseWAMessage(raw: string): ParsedTransaction {
   const categoryHint = guessCategory(description || text);
 
   return {
-    type,
-    amount,
+    type, amount,
     description: description || (type === "income" ? "Pemasukan" : "Pengeluaran"),
-    categoryHint,
-    valid: true,
+    categoryHint, valid: true,
   };
 }
 
