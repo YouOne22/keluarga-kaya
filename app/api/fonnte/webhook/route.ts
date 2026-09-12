@@ -97,15 +97,28 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ status: "ok" });
       }
 
+      // Look up category_id from category name if available
+      let categoryId: string | null = null;
+      if (draft.category) {
+        const { data: cat } = await admin
+          .from("categories")
+          .select("id")
+          .eq("family_id", draft.householdId)
+          .ilike("name", draft.category)
+          .limit(1)
+          .maybeSingle();
+        categoryId = cat?.id ?? null;
+      }
+
       // Insert confirmed transaction
       const { error } = await admin.from("transactions").insert({
-        household_id: draft.householdId,
         family_id: draft.householdId,
         user_id: draft.userId,
         type: draft.type,
         amount: draft.amount,
         description: draft.description,
-        category: draft.category,
+        category_id: categoryId,
+        transaction_date: new Date().toISOString().slice(0, 10),
         source: "whatsapp",
         status: "confirmed",
       });

@@ -87,19 +87,21 @@ export default function AnggotaPage() {
         <p style={{ color: "var(--muted)", fontSize: 13, marginBottom: 14 }}>
           Masukkan nomor WhatsApp anggota yang sudah mendaftar di aplikasi.
         </p>
-        <form onSubmit={addMember} style={{ display: "flex", gap: 10, alignItems: "end" }}>
-          <div className="field" style={{ flex: 1, margin: 0 }}>
+        <form onSubmit={addMember} className="form-grid">
+          <div className="field form-full">
             <label>Nomor WhatsApp</label>
             <Input
               value={phone}
               onChange={(e) => setPhone(e.target.value)}
-              placeholder="62812..."
+              placeholder="08123456789"
               required
             />
           </div>
-          <Button type="submit" disabled={loading}>
-            {loading ? "Menambahkan..." : "Tambah"}
-          </Button>
+          <div className="form-full" style={{ display: "flex", justifyContent: "flex-end", gap: 10 }}>
+            <Button type="submit" disabled={loading}>
+              {loading ? "Menambahkan..." : "Tambah"}
+            </Button>
+          </div>
         </form>
         {msg && (
           <div className="notice" style={{
