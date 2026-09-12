@@ -1,7 +1,114 @@
+"use client";
+import { useState, useEffect } from "react";
 import { UserPlus } from "lucide-react";
-import { createClient } from "@/lib/supabase/server";
+import { createClient } from "@/lib/supabase/client";
 import { AppHeader } from "@/components/app/navigation";
-import { Card } from "@/components/ui";
+import { Button, Card, Input } from "@/components/ui";
 import { initials } from "@/lib/financial";
-export const dynamic="force-dynamic";
-export default async function AnggotaPage(){const supabase=await createClient();const {data:m}=await supabase.from("family_members").select("user_id,role,joined_at").limit(50);const ids=(m||[]).map((x:any)=>x.user_id);const {data:profiles}=ids.length?await supabase.from("profiles").select("id,full_name,phone_number").in("id",ids):{data:[]};const byId=new Map((profiles||[]).map((x:any)=>[x.id,x]));return <><AppHeader title="Anggota" subtitle="Orang dalam keluarga"/><Card>{m?.length?m.map((member:any)=>{const p=byId.get(member.user_id);return <div className="member-row" key={member.user_id}><span className="avatar">{initials(p?.full_name||"Anggota")}</span><div><strong>{p?.full_name||"Anggota"}</strong><span>{p?.phone_number||"Belum ada nomor"}</span></div><span className="pill">{member.role==="owner"?"Pemilik":"Anggota"}</span></div>}):<div className="empty"><UserPlus size={28}/><strong>Belum ada anggota</strong>Tambahkan anggota setelah fitur undangan tersedia.</div>}</Card><Card className="side-panel" style={{marginTop:18}}><h3>Undang anggota keluarga</h3><p style={{color:"var(--muted)",fontSize:13}}>Bagikan nomor keluarga Anda agar anggota dapat terhubung dengan bot WhatsApp.</p></Card></>}
+
+type MemberRow = { user_id: string; role: string; joined_at: string };
+type ProfileRow = { id: string; full_name: string; phone_number: string | null };
+
+export default function AnggotaPage() {
+  const supabase = createClient();
+  const [members, setMembers] = useState<(MemberRow & { full_name: string; phone_number: string | null })[]>([]);
+  const [isOwner, setIsOwner] = useState(false);
+  const [phone, setPhone] = useState("");
+  const [msg, setMsg] = useState("");
+  const [loading, setLoading] = useState(false);
+
+  async function load() {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+
+    const { data: m } = await supabase
+      .from("family_members")
+      .select("user_id, role, joined_at")
+      .limit(50);
+
+    if (!m) return;
+
+    const myMembership = m.find((x: MemberRow) => x.user_id === user.id);
+    setIsOwner(myMembership?.role === "owner");
+
+    const ids = m.map((x: MemberRow) => x.user_id);
+    const { data: profiles } = ids.length
+      ? await supabase.from("profiles").select("id, full_name, phone_number").in("id", ids)
+      : { data: [] };
+
+    const byId = new Map((profiles || []).map((p: ProfileRow) => [p.id, p]));
+    const merged = m.map((x: MemberRow) => ({
+      ...x,
+      full_name: byId.get(x.user_id)?.full_name || "Anggota",
+      phone_number: byId.get(x.user_id)?.phone_number || null,
+    }));
+    setMembers(merged);
+  }
+
+  useEffect(() => { load(); }, []);
+
+  async function addMember(e: React.FormEvent) {
+    e.preventDefault();
+    setLoading(true);
+    setMsg("");
+    const { error } = await supabase.rpc("add_family_member", { p_phone: phone.trim() });
+    if (error) {
+      setMsg(error.message);
+    } else {
+      setMsg("Anggota berhasil ditambahkan!");
+      setPhone("");
+      load();
+    }
+    setLoading(false);
+  }
+
+  return <>
+    <AppHeader title="Anggota" subtitle="Orang dalam keluarga" />
+    <Card>
+      {members.length ? members.map((m) => (
+        <div className="member-row" key={m.user_id}>
+          <span className="avatar">{initials(m.full_name)}</span>
+          <div>
+            <strong>{m.full_name}</strong>
+            <span>{m.phone_number || "Belum ada nomor"}</span>
+          </div>
+          <span className="pill">{m.role === "owner" ? "Pemilik" : "Anggota"}</span>
+        </div>
+      )) : (
+        <div className="empty">
+          <UserPlus size={28} />
+          <strong>Belum ada anggota</strong>
+        </div>
+      )}
+    </Card>
+    {isOwner && (
+      <Card className="side-panel" style={{ marginTop: 18 }}>
+        <h3>Tambah anggota keluarga</h3>
+        <p style={{ color: "var(--muted)", fontSize: 13, marginBottom: 14 }}>
+          Masukkan nomor WhatsApp anggota yang sudah mendaftar di aplikasi.
+        </p>
+        <form onSubmit={addMember} style={{ display: "flex", gap: 10, alignItems: "end" }}>
+          <div className="field" style={{ flex: 1, margin: 0 }}>
+            <label>Nomor WhatsApp</label>
+            <Input
+              value={phone}
+              onChange={(e) => setPhone(e.target.value)}
+              placeholder="62812..."
+              required
+            />
+          </div>
+          <Button type="submit" disabled={loading}>
+            {loading ? "Menambahkan..." : "Tambah"}
+          </Button>
+        </form>
+        {msg && (
+          <div className="notice" style={{
+            marginTop: 12,
+            color: msg.includes("berhasil") ? "var(--green)" : "#e74c3c",
+            fontSize: 13,
+          }}>{msg}</div>
+        )}
+      </Card>
+    )}
+  </>;
+}
