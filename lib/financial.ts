@@ -21,3 +21,15 @@ export type SavingGoalDeposit = { id: string; goal_id: string; amount: number; n
 
 export const goalCategories = ["Pendidikan", "Rumah", "Kendaraan", "Liburan", "Pernikahan", "Dana Darurat", "Modal Usaha", "Lainnya"] as const;
 export const goalColors: Record<string, string> = { Pendidikan: "#2886e8", Rumah: "#008d51", Kendaraan: "#f59a27", Liburan: "#e8498b", Pernikahan: "#8a5bd7", "Dana Darurat": "#ef5550", "Modal Usaha": "#f39a2e", Lainnya: "#6b8580" };
+
+// ===== Bills (Tagihan Bulanan) =====
+export type Bill = { id: string; family_id: string; name: string; amount: number; due_day: number; category_id: string | null; notes: string; is_active: boolean; created_at: string; };
+export type BillPayment = { id: string; bill_id: string; family_id: string; month: string; amount: number; account_id: string | null; note: string; paid_at: string; };
+
+// ===== Installments (Cicilan/Angsuran) =====
+export type Installment = { id: string; family_id: string; name: string; total_amount: number; monthly_amount: number; tenor_total: number; tenor_paid: number; start_date: string; account_id: string | null; category_id: string | null; notes: string; status: string; created_at: string; };
+export type InstallmentPayment = { id: string; installment_id: string; family_id: string; tenor_number: number; amount: number; account_id: string | null; note: string; paid_at: string; };
+
+// ===== Debts (Hutang/Piutang) =====
+export type Debt = { id: string; family_id: string; type: "debt" | "receivable"; person_name: string; amount: number; paid_amount: number; due_date: string | null; notes: string; status: string; created_at: string; };
+export type DebtPayment = { id: string; debt_id: string; family_id: string; amount: number; account_id: string | null; note: string; paid_at: string; };

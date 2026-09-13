@@ -1,7 +1,7 @@
 "use client";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Bell, CircleDollarSign, FileText, House, Landmark, ReceiptText, Settings, Tag, Target, Users } from "lucide-react";
+import { Bell, CircleDollarSign, FileText, House, Landmark, ReceiptText, Settings, Tag, Target, Users, CalendarClock, CreditCard, HandCoins } from "lucide-react";
 
 const links = [
   { href: "/dashboard", label: "Beranda", icon: House },
@@ -12,6 +12,9 @@ const links = [
 ];
 
 const moreLinks = [
+  { href: "/tagihan", label: "Tagihan", icon: CalendarClock },
+  { href: "/cicilan", label: "Cicilan", icon: CreditCard },
+  { href: "/hutang", label: "Hutang & Piutang", icon: HandCoins },
   { href: "/rekening", label: "Rekening", icon: Landmark },
   { href: "/laporan", label: "Laporan", icon: FileText },
   { href: "/anggota", label: "Anggota keluarga", icon: Users },
