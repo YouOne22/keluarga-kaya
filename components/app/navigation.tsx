@@ -1,7 +1,8 @@
 "use client";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Bell, CircleDollarSign, FileText, House, Landmark, ReceiptText, Settings, Tag, Target, Users, CalendarClock, CreditCard, HandCoins } from "lucide-react";
+import { Bell, CircleDollarSign, FileText, House, Landmark, ReceiptText, Settings, Tag, Target, Users, CalendarClock, CreditCard, HandCoins, Menu, X } from "lucide-react";
+import { useState } from "react";
 
 const links = [
   { href: "/dashboard", label: "Beranda", icon: House },
