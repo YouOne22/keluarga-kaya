@@ -42,7 +42,7 @@ export default function HutangPage() {
         <p style={{ margin: 0, fontSize: 12, color: "var(--muted)" }}>Sisa {tab === "debt" ? "hutang" : "piutang"}</p>
         <p style={{ margin: "4px 0 0", fontSize: 20, fontWeight: 800, color: tab === "debt" ? "#ef5550" : "#008d51" }}>{formatRupiah(totalActive)}</p>
       </Card>}
-      {active.length > 0 && <><div className="section-title" style={{ marginTop: 4 }}><h2>Belum lunas</h2></div><div style={{ display: "flex", flexDirection: "column", gap: 8 }}>{active.map(d => <DebtRow key={d.id} debt={d} onPay={tab === "receivable" ? undefined : () => setPayDebt(d)} onRemove={async () => { if (!confirm("Hapus?")) return; await s.from("debts").delete().eq("id", d.id); load(); }} />)}</div></>}
+      {active.length > 0 && <><div className="section-title" style={{ marginTop: 4 }}><h2>Belum lunas</h2></div><div style={{ display: "flex", flexDirection: "column", gap: 8 }}>{active.map(d => <DebtRow key={d.id} debt={d} onPay={() => setPayDebt(d)} onRemove={async () => { if (!confirm("Hapus?")) return; await s.from("debts").delete().eq("id", d.id); load(); }} />)}</div></>}
       {done.length > 0 && <><div className="section-title" style={{ marginTop: 20 }}><h2>Sudah lunas</h2></div><div style={{ display: "flex", flexDirection: "column", gap: 8 }}>{done.map(d => <DebtRow key={d.id} debt={d} onRemove={async () => { if (!confirm("Hapus?")) return; await s.from("debts").delete().eq("id", d.id); load(); }} />)}</div></>}
     </>)}
     <AddModal open={openAdd} close={() => setOpenAdd(false)} done={() => { setOpenAdd(false); load(); }} s={s} familyId={familyId} defaultType={tab} />
@@ -67,7 +67,7 @@ function DebtRow({ debt, onPay, onRemove }: { debt: Debt; onPay?: () => void; on
         </p>
       </div>
       <div style={{ display: "flex", gap: 4 }}>
-        {!completed && onPay && <Button variant="secondary" style={{ padding: "4px 10px", fontSize: 12 }} onClick={onPay}>Bayar</Button>}
+        {!completed && onPay && <Button variant="secondary" style={{ padding: "4px 10px", fontSize: 12 }} onClick={onPay}>{debt.type === "receivable" ? "Terima" : "Bayar"}</Button>}
         <button onClick={onRemove} style={{ background: "none", border: "none", cursor: "pointer", color: "var(--muted)", padding: 4 }}><Trash2 size={14} /></button>
       </div>
     </div>
@@ -107,7 +107,7 @@ function AddModal({ open, close, done, s, familyId, defaultType }: { open: boole
   return <Modal open={open} title={`Tambah ${defaultType === "debt" ? "hutang" : "piutang"}`} onClose={close}>
     <form onSubmit={submit}>
       <div className="form-grid">
-        <div className="field form-full"><label>{defaultType === "debt" ? "Piutang ke" : "Hutang dari"}</label><Input value={person} onChange={e => setPerson(e.target.value)} placeholder="Nama orang" required /></div>
+        <div className="field form-full"><label>{defaultType === "debt" ? "Hutang dari" : "Piutang ke"}</label><Input value={person} onChange={e => setPerson(e.target.value)} placeholder="Nama orang" required /></div>
         <div className="field"><label>Nominal</label><Input inputMode="numeric" value={amount} onChange={e => setAmount(formatInput(e.target.value))} placeholder="Rp 500.000" required /></div>
         <div className="field"><label>Jatuh tempo</label><Input type="date" value={dueDate} onChange={e => setDueDate(e.target.value)} /></div>
         <div className="field form-full"><label>Catatan</label><Input value={notes} onChange={e => setNotes(e.target.value)} placeholder="Opsional" /></div>
@@ -119,6 +119,7 @@ function AddModal({ open, close, done, s, familyId, defaultType }: { open: boole
 }
 
 function PayModal({ open, debt, close, done, s, familyId }: { open: boolean; debt: Debt; close: () => void; done: () => void; s: any; familyId: string }) {
+  const isReceivable = debt.type === "receivable";
   const remaining = Math.max(debt.amount - debt.paid_amount, 0);
   const [payAmount, setPayAmount] = useState(formatInput(String(remaining)));
   const [error, setError] = useState("");
@@ -132,13 +133,13 @@ function PayModal({ open, debt, close, done, s, familyId }: { open: boolean; deb
     if (e2) setError(e2.message); else done();
     setSaving(false);
   }
-  return <Modal open={open} title={`Bayar: ${debt.person_name}`} onClose={close}>
+  return <Modal open={open} title={`${isReceivable ? "Terima dari" : "Bayar"}: ${debt.person_name}`} onClose={close}>
     <div style={{ padding: "12px 14px", background: "#f7faf8", borderRadius: 12, fontSize: 13, marginBottom: 16 }}>
       <div style={{ display: "flex", justifyContent: "space-between" }}><span style={{ color: "var(--muted)" }}>Sisa</span><strong>{formatRupiah(remaining)}</strong></div>
     </div>
-    <div className="field"><label>Nominal bayar</label><Input inputMode="numeric" value={payAmount} onChange={e => setPayAmount(formatInput(e.target.value))} /></div>
+    <div className="field"><label>{isReceivable ? "Nominal terima" : "Nominal bayar"}</label><Input inputMode="numeric" value={payAmount} onChange={e => setPayAmount(formatInput(e.target.value))} /></div>
     {error && <div className="notice error" style={{ marginTop: 12 }}>{error}</div>}
-    <div className="form-actions"><Button variant="secondary" onClick={close}>Batal</Button><Button onClick={submit} disabled={saving}>{saving ? "Memproses..." : "Bayar"}</Button></div>
+    <div className="form-actions"><Button variant="secondary" onClick={close}>Batal</Button><Button onClick={submit} disabled={saving}>{saving ? "Memproses..." : isReceivable ? "Terima" : "Bayar"}</Button></div>
   </Modal>;
 }
 
