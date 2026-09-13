@@ -9,8 +9,9 @@ const links = [
   { href: "/transaksi", label: "Transaksi", icon: ReceiptText },
   { href: "/anggaran", label: "Anggaran", icon: CircleDollarSign },
   { href: "/target", label: "Target", icon: Target },
-  { href: "/profil", label: "Profil", icon: Settings },
 ];
+
+const profileLink = { href: "/profil", label: "Profil", icon: Settings };
 
 const moreLinks = [
   { href: "/tagihan", label: "Tagihan", icon: CalendarClock },
@@ -23,7 +24,9 @@ const moreLinks = [
   { href: "/notifikasi", label: "Notifikasi", icon: Bell },
 ];
 
-function NavItem({ item, compact = false, onClick }: { item: typeof links[number]; compact?: boolean; onClick?: () => void }) {
+type NavItemData = { href: string; label: string; icon: typeof House };
+
+function NavItem({ item, compact = false, onClick }: { item: NavItemData; compact?: boolean; onClick?: () => void }) {
   const path = usePathname();
   const Icon = item.icon;
   const active = path === item.href || (item.href !== "/dashboard" && path.startsWith(item.href));
@@ -36,6 +39,7 @@ export function Sidebar({ familyName }: { familyName: string }) {
     <div className="family-chip"><span className="family-dot"/><div><small>KELUARGA AKTIF</small><strong>{familyName}</strong></div></div>
     <nav>{links.map(item => <NavItem item={item} key={item.href}/>)}</nav>
     <div className="sidebar-more">{moreLinks.map(item => <NavItem item={item} key={item.href}/>)}</div>
+    <div className="sidebar-profile"><NavItem item={profileLink} /></div>
   </aside>;
 }
 
@@ -57,6 +61,8 @@ export function BottomNav() {
             {links.map(item => <NavItem item={item} key={item.href} onClick={() => setOpen(false)} />)}
             <div style={{height: 1, background: "var(--line)", margin: "10px 0"}} />
             {moreLinks.map(item => <NavItem item={item} key={item.href} onClick={() => setOpen(false)} />)}
+            <div style={{height: 1, background: "var(--line)", margin: "10px 0"}} />
+            <NavItem item={profileLink} onClick={() => setOpen(false)} />
           </div>
         </div>
       </div>
